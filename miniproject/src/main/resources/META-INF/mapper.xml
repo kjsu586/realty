@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SQL문법에 대한 파일(mapper) -->
+<mapper namespace="miniproject.email_join_mapper">
+<!-- DML만 사용할 수 있음
+<select id=""></select>
+<insert id=""></insert>
+<update id=""></update>
+<delete id=""></delete>
+
+${} : 필드명, 테이블명, 파라미터 / ''가 붙지 않을 때
+#{} : 값을 적용시킬때 사용하는 파라미터값 / ''가 붙을 때
+-->
+<select id="findByKakaoId" resultType="miniproject.DTO_email_join">
+    SELECT * FROM email_join WHERE kakao_id = #{kakao_id}
+</select>
+
+
+<select id="md_board_list_paging" resultType="DTO_md_board" parameterType="map">
+  select ridx, rtitle, rwriter, rtext,
+         thumbnail AS thumbnailname,
+         rcnt, rdate
+  from rcm
+  <where>
+    <if test="search != null and search != ''">
+      rtitle like #{search}
+    </if>
+  </where>
+  order by ridx desc
+  limit #{limit} offset #{offset}
+</select>
+
+<select id="md_board_total" resultType="int" parameterType="string">
+  select count(*) from rcm
+  <where>
+    <if test="_parameter != null and _parameter != ''">
+      rtitle like #{_parameter}
+    </if>
+  </where>
+</select>
+
+
+<!-- 조회수 증가 -->
+<update id="md_board_rcnt_up" parameterType="int">
+update rcm set rcnt = rcnt + 1 where ridx=#{ridx}
+</update>
+
+<!-- 게시글 조회 -->
+<select id="md_board_view"  parameterType="int" resultType="DTO_md_board">
+select ridx, rtitle, rwriter, rtext,
+  thumbnail as thumbnailname,
+  rcnt, rdate from rcm where ridx=#{ridx}
+</select>
+
+<!-- 분양정보 출력 -->
+<select id="md_board_list" resultType="DTO_md_board">
+select ridx, rtitle, rwriter, rtext,
+  thumbnail as thumbnailname,
+  rcnt, rdate from rcm order by ridx desc
+</select>
+
+<!-- 추천분양 정보 DB저장 -->
+<insert id="md_board_write" parameterType="DTO_md_board">
+insert into rcm (ridx,rtitle,rwriter,thumbnail,rtext,rdate) values ('0',#{rtitle},#{rwriter},#{thumbnailname},#{rtext},now());
+</insert>
+
+<!-- 방문예약 취소 -->
+<delete id="reservation_cancel" parameterType="DTO_reservation">
+delete from reservation_info where e_name=#{e_name} and apt_name=#{apt_name}
+</delete>
+
+<select id="selectReservationsByName" resultType="DTO_reservation">
+  SELECT * FROM reservation_info WHERE e_name = #{e_name}
+</select>
+
+<!-- 예약버튼 보여줄지 -->
+<select id="check_reservation" resultType="int">
+select count(*) from reservation_info where e_name=#{e_name} and apt_name=#{apt_name}
+</select>
+
+<!-- 예약 확인 -->
+<select id="selectByEmail" parameterType="String" resultType="DTO_reservation">
+select * from reservation_info where e_name=(select e_name from email_join where e_mail=#{e_mail})
+</select>
+
+<!-- 방문예약 저장 -->
+<insert id="insertReservation" parameterType="miniproject.DTO_reservation">
+insert into reservation_info (ridx, apt_name, visit_date, visit_time, e_name, people_cnt, e_number, rdate) values ('0', #{apt_name}, #{visit_date}, #{visit_time}, #{e_name}, #{people_cnt}, #{e_number},now())    
+</insert>
+
+<!-- 아파트 정보 가져오기 -->
+<select id="selectByAidx" resultType="miniproject.DTO_apt_info" parameterType="int">
+select * from apt_info where aidx=#{aidx}
+</select>
+
+<!-- 예약여부 확인 -->
+<select id="reserve_ck" resultType="int">
+select count(*) from counsel_info where e_mail=#{e_mail}
+</select>
+
+<!-- 상담신청 저장 -->
+<insert id="counsel">
+insert into counsel_info (cidx, e_name, e_mail, e_number, crent, chouse, cday, ctext, cdate) values ('0', #{e_name}, #{e_mail}, #{e_number}, #{crent}, #{chouse}, #{cday}, #{ctext},now())
+</insert>
+
+<!-- 이메일 중복체크 -->
+<select id="email_check" parameterType="String" resultType="miniproject.DTO_email_join">
+select * from email_join where e_mail=#{e_mail}
+</select>
+
+<!-- 비밀번호 변경 -->
+<update id="pw_update">
+update email_join set e_pw=#{e_pw},e_pwck=#{e_pwck} where eidx=#{eidx}
+</update>
+
+<!-- 비밀번호 찾기 -->
+<select id="search_pw" resultType="emaildto" parameterType="Map">
+select * from email_join where e_mail=#{e_mail} and e_number=#{e_number}
+</select>
+
+<select id="login" resultType="miniproject.DTO_email_join" parameterType="miniproject.DTO_email_join">
+select * from email_join where e_mail=#{e_mail} and e_pw=#{e_pw}
+</select>
+
+<select id="apt_info" resultType="DTO_apt_info">
+select * from apt_info order by aidx
+</select>
+
+<select id="md_choice" resultType="DTO_apt_info">
+select * from mdchoice order by midx
+</select>
+
+<!-- select 만들려고 했는데..
+<insert id="apt_in">
+insert into apt_info (aidx,apt_name,apt_addr,apt_type,apt_shape,date_of_sale,date_of_occupancy,apt_img,heating_structure,household_count,building_count,construction_company,use_status,date_of_registration)
+values ('0',#{apt_name},#{apt_addr},#{apt_type},#{apt_shape},#{date_of_sale},#{date_of_occupancy},#{apt_img},#{heating_structure},#{household_count},#{building_count},#{construction_company},#{use_status},now())
+</insert>
+-->
+
+<insert id="email_insert">
+insert into email_join (eidx,e_mail,e_pw,e_pwck,e_name,e_number,e_ck1,e_ck2,e_ck3,e_marketing,e_date)
+values ('0',#{e_mail},#{e_pw},#{e_pwck},#{e_name},#{e_number},#{e_ck1},#{e_ck2},#{e_ck3},#{e_marketing},now())
+</insert>
+
+<select id="search_userid" resultType="emaildto" parameterType="Map">
+select e_mail from email_join where e_name=#{e_name} and e_number=#{e_number}
+</select>
+
+<!-- 전체 데이터 출력 -->
+<select id="user_all" resultType="emaildto" parameterType="String">
+select * from email_join order by eidx desc
+</select>
+
+<!-- resultType : config.xml에 세팅된 alias를 이용하여 Model DTO에 전달 -->
+
+<!-- 과정 데이터 수정 
+<update id="macbook_update">
+update macbook_class set class_part=#{class_part}, class_cate=#{class_cate}, class_name=#{class_name},
+class_day=#{class_day}, class_price=#{class_price}, class_sales=#{class_sales},
+class_info=#{class_info}, class_teacher=#{class_teacher}, class_object=#{class_object}, 
+class_use=#{class_use} where midx = ${midx}
+</update>
+-->
+<!-- 과정 하나의 데이터 
+<select id="macbook_one" resultType="macbookdto" parameterType="String">
+select * from macbook_class where midx = #{midx}
+</select>
+-->
+<!-- 과정 전체의 리스트데이터
+<select id="macbook_select" resultType="macbookdto">
+select * from macbook_class order by midx desc
+</select>
+-->
+<!--  
+<delete id="macbook_delete">
+delete from macbook_class
+</delete>
+-->
+
+
+</mapper>
